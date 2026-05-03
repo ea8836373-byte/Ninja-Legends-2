@@ -1,0 +1,63 @@
+local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+ScreenGui.Name = "NinjaFarmingSimple"
+
+local Main = Instance.new("Frame", ScreenGui)
+Main.Size = UDim2.new(0, 200, 0, 120)
+Main.Position = UDim2.new(0.5, -100, 0.5, -60)
+Main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+local Corner = Instance.new("UICorner", Main)
+
+-- Variabile di controllo per il loop
+_G.NinjaLoop = false
+
+-- --- BOTTONE ON ---
+local OnBtn = Instance.new("TextButton", Main)
+OnBtn.Size = UDim2.new(0, 180, 0, 40)
+OnBtn.Position = UDim2.new(0, 10, 0, 15)
+OnBtn.Text = "START SWING"
+OnBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+OnBtn.TextColor3 = Color3.new(1, 1, 1)
+OnBtn.Font = "GothamBold"
+
+OnBtn.MouseButton1Click:Connect(function()
+    if _G.NinjaLoop then return end -- Evita di attivare più loop insieme
+    _G.NinjaLoop = true
+    
+    while _G.NinjaLoop do
+        -- Il tuo codice specifico
+        local args = {
+            "swingBlade"
+        }
+        game:GetService("Players").LocalPlayer:WaitForChild("saberEvent"):FireServer(unpack(args))
+        
+        task.wait() -- Il wait(0) aggiustato per non laggare
+    end
+end)
+
+-- --- BOTTONE OFF ---
+local OffBtn = Instance.new("TextButton", Main)
+OffBtn.Size = UDim2.new(0, 180, 0, 40)
+OffBtn.Position = UDim2.new(0, 10, 0, 65)
+OffBtn.Text = "OFF"
+OffBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+OffBtn.TextColor3 = Color3.new(1, 1, 1)
+OffBtn.Font = "GothamBold"
+
+OffBtn.MouseButton1Click:Connect(function()
+    _G.NinjaLoop = false -- Questo ferma il "while true do" sopra
+end)
+
+-- Rende la finestrella trascinabile
+local dragging, dragInput, dragStart, startPos
+Main.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true; dragStart = input.Position; startPos = Main.Position
+    end
+end)
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+        local delta = input.Position - dragStart
+        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+Main.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
