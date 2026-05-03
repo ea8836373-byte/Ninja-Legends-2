@@ -1,50 +1,75 @@
 local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
-ScreenGui.Name = "NinjaFarming_Turbo"
+ScreenGui.Name = "NinjaSaber_Final_Turbo"
 
 local Main = Instance.new("Frame", ScreenGui)
-Main.Size = UDim2.new(0, 200, 0, 120)
-Main.Position = UDim2.new(0.5, -100, 0.5, -60)
-Main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Main.Size = UDim2.new(0, 250, 0, 240)
+Main.Position = UDim2.new(0.5, -125, 0.5, -120)
+Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 Instance.new("UICorner", Main)
 
-_G.NinjaLoop = false
+-- Bordo Rosso Sangue
+local Stroke = Instance.new("UIStroke", Main)
+Stroke.Color = Color3.fromRGB(200, 0, 0)
+Stroke.Thickness = 2
 
-local OnBtn = Instance.new("TextButton", Main)
-OnBtn.Size = UDim2.new(0, 180, 0, 40)
-OnBtn.Position = UDim2.new(0, 10, 0, 15)
-OnBtn.Text = "TURBO START (x100)"
-OnBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-OnBtn.TextColor3 = Color3.new(1, 1, 1)
-OnBtn.Font = "GothamBold"
-Instance.new("UICorner", OnBtn)
+-- Variabili per il controllo dei Loop
+_G.SwingLoop = false
+_G.CoinLoop = false
 
-OnBtn.MouseButton1Click:Connect(function()
-    if _G.NinjaLoop then return end
-    _G.NinjaLoop = true
+local function AddButton(txt, yPos, color, cb)
+    local btn = Instance.new("TextButton", Main)
+    btn.Size = UDim2.new(0, 220, 0, 40)
+    btn.Position = UDim2.new(0, 15, 0, yPos)
+    btn.Text = txt
+    btn.BackgroundColor3 = color
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = "GothamBold"
+    btn.TextSize = 13
+    Instance.new("UICorner", btn)
+    btn.MouseButton1Click:Connect(cb)
+end
+
+-- --- SEZIONE AUTO SWING ---
+AddButton("START AUTO SWING", 15, Color3.fromRGB(0, 150, 0), function()
+    if _G.SwingLoop then return end
+    _G.SwingLoop = true
     
-    local args = {"swingBlade"}
-    local event = game:GetService("Players").LocalPlayer:WaitForChild("saberEvent")
-    
-    while _G.NinjaLoop do
-        -- Questo è il trucco: un loop dentro il loop
-        for i = 1, 100 do 
-            event:FireServer(unpack(args))
-        end
-        
-        -- Il "wait" bilanciato per non crashare ma andare a palla
-        task.wait(0.1) 
+    while _G.SwingLoop do
+        local args = {"swingBlade"}
+        game:GetService("Players").LocalPlayer:WaitForChild("saberEvent"):FireServer(unpack(args))
+        task.wait() -- Massima velocità
     end
 end)
 
-local OffBtn = Instance.new("TextButton", Main)
-OffBtn.Size = UDim2.new(0, 180, 0, 40)
-OffBtn.Position = UDim2.new(0, 10, 0, 65)
-OffBtn.Text = "OFF"
-OffBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
-OffBtn.TextColor3 = Color3.new(1, 1, 1)
-OffBtn.Font = "GothamBold"
-Instance.new("UICorner", OffBtn)
-
-OffBtn.MouseButton1Click:Connect(function()
-    _G.NinjaLoop = false
+AddButton("SWING OFF", 60, Color3.fromRGB(130, 0, 0), function()
+    _G.SwingLoop = false
 end)
+
+-- --- SEZIONE TURBO SELL (COINS) ---
+-- Qui c'è la roba del Sell (x100) di cui parlavamo
+AddButton("START TURBO SELL (x100)", 120, Color3.fromRGB(0, 100, 200), function()
+    if _G.CoinLoop then return end
+    _G.CoinLoop = true
+    
+    -- Cerca l'evento di vendita (Sell) tipico di Ninja Legends 2
+    local sellEvent = game:GetService("ReplicatedStorage"):WaitForChild("Events"):FindFirstChild("sellItems")
+    
+    while _G.CoinLoop do
+        -- Il "trucco" del video: spamma 100 vendite in un colpo solo
+        for i = 1, 100 do
+            if sellEvent then
+                sellEvent:FireServer()
+            end
+        end
+        task.wait(0.1) -- Aspetta un decimo di secondo tra le raffiche da 100
+    end
+end)
+
+AddButton("SELL OFF", 165, Color3.fromRGB(130, 0, 0), function()
+    _G.CoinLoop = false
+end)
+
+-- Sistema per trascinare la finestra con il dito/mouse
+local d, s, p; Main.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then d = true; s = i.Position; p = Main.Position end end)
+game:GetService("UserInputService").InputChanged:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseMovement and d then local del = i.Position - s; Main.Position = UDim2.new(p.X.Scale, p.X.Offset + del.X, p.Y.Scale, p.Y.Offset + del.Y) end end)
+Main.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then d = false end end)
