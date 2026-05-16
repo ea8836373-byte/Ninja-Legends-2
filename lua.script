@@ -1,75 +1,274 @@
-local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
-ScreenGui.Name = "NinjaSaber_Final_Turbo"
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
-local Main = Instance.new("Frame", ScreenGui)
-Main.Size = UDim2.new(0, 250, 0, 240)
-Main.Position = UDim2.new(0.5, -125, 0.5, -120)
-Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-Instance.new("UICorner", Main)
+local Window = Rayfield:CreateWindow({
+   Name = "Best Hub | Ninja Legends 2",
+   LoadingTitle = "Best Hub Creations",
+   LoadingSubtitle = "by @rexbgod",
+   ConfigurationSaving = {
+      Enabled = false
+   },
+   KeySystem = false
+})
 
--- Bordo Rosso Sangue
-local Stroke = Instance.new("UIStroke", Main)
-Stroke.Color = Color3.fromRGB(200, 0, 0)
-Stroke.Thickness = 2
+local Player = game.Players.LocalPlayer
+local SelectedIsland = ""
 
--- Variabili per il controllo dei Loop
-_G.SwingLoop = false
-_G.CoinLoop = false
+-- --- CONFIGURAZIONE COORDINATE ESATTE IN ORDINE ---
+local IslandCoordinates = {
+    { Name = "Planet Zephyr", Pos = Vector3.new(1.16, 1467.45, 142.06) },
+    { Name = "Infernal Planet", Pos = Vector3.new(1.16, 3057.55, 142.06) },
+    { Name = "Planet Omega", Pos = Vector3.new(1.16, 4681.55, 142.06) },
+    { Name = "Elements Planet", Pos = Vector3.new(63.18, 6311.65, 101.07) },
+    { Name = "Planet of Chaos", Pos = Vector3.new(1.16, 8632.05, 142.06) }
+}
 
-local function AddButton(txt, yPos, color, cb)
-    local btn = Instance.new("TextButton", Main)
-    btn.Size = UDim2.new(0, 220, 0, 40)
-    btn.Position = UDim2.new(0, 15, 0, yPos)
-    btn.Text = txt
-    btn.BackgroundColor3 = color
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.Font = "GothamBold"
-    btn.TextSize = 13
-    Instance.new("UICorner", btn)
-    btn.MouseButton1Click:Connect(cb)
+-- --- FUNZIONE TELETRASPORTO DIRETTO ---
+local function DirectTeleport(pos)
+    if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+        Player.Character.HumanoidRootPart.CFrame = CFrame.new(pos)
+    end
 end
 
--- --- SEZIONE AUTO SWING ---
-AddButton("START AUTO SWING", 15, Color3.fromRGB(0, 150, 0), function()
-    if _G.SwingLoop then return end
-    _G.SwingLoop = true
-    
-    while _G.SwingLoop do
-        local args = {"swingBlade"}
-        game:GetService("Players").LocalPlayer:WaitForChild("saberEvent"):FireServer(unpack(args))
-        task.wait() -- Massima velocità
+-- --- FUNZIONE DI PROSSIMITÀ ISTANTANEA (NO TELEPORT PER SHOP/SELL) ---
+local function FireProximity(targetPos)
+    if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+        local currentCFrame = Player.Character.HumanoidRootPart.CFrame
+        Player.Character.HumanoidRootPart.CFrame = CFrame.new(targetPos)
+        task.wait(0.05)
+        Player.Character.HumanoidRootPart.CFrame = currentCFrame
     end
-end)
+end
 
-AddButton("SWING OFF", 60, Color3.fromRGB(130, 0, 0), function()
-    _G.SwingLoop = false
-end)
-
--- --- SEZIONE TURBO SELL (COINS) ---
--- Qui c'è la roba del Sell (x100) di cui parlavamo
-AddButton("START TURBO SELL (x100)", 120, Color3.fromRGB(0, 100, 200), function()
-    if _G.CoinLoop then return end
-    _G.CoinLoop = true
+-- --- FUNZIONE AUTO-EQUIP ANCHE DOPO LA MORTE ---
+local function EnsureWeaponEquipped()
+    local char = Player.Character
+    local humanoid = char and char:FindFirstChildOfClass("Humanoid")
     
-    -- Cerca l'evento di vendita (Sell) tipico di Ninja Legends 2
-    local sellEvent = game:GetService("ReplicatedStorage"):WaitForChild("Events"):FindFirstChild("sellItems")
-    
-    while _G.CoinLoop do
-        -- Il "trucco" del video: spamma 100 vendite in un colpo solo
-        for i = 1, 100 do
-            if sellEvent then
-                sellEvent:FireServer()
-            end
+    if char and humanoid and humanoid.Health > 0 then
+        local tool = Player.Backpack:FindFirstChildOfClass("Tool") or char:FindFirstChildOfClass("Tool")
+        if tool and tool.Parent ~= char then
+            humanoid:EquipTool(tool)
         end
-        task.wait(0.1) -- Aspetta un decimo di secondo tra le raffiche da 100
     end
-end)
+end
 
-AddButton("SELL OFF", 165, Color3.fromRGB(130, 0, 0), function()
-    _G.CoinLoop = false
-end)
+--------------------------------------------------------------------------------
+-- MAIN TAB
+--------------------------------------------------------------------------------
+local MainTab = Window:CreateTab("Main", "dumbbell")
 
--- Sistema per trascinare la finestra con il dito/mouse
-local d, s, p; Main.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then d = true; s = i.Position; p = Main.Position end end)
-game:GetService("UserInputService").InputChanged:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseMovement and d then local del = i.Position - s; Main.Position = UDim2.new(p.X.Scale, p.X.Offset + del.X, p.Y.Scale, p.Y.Offset + del.Y) end end)
-Main.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then d = false end end)
+MainTab:CreateSection("Training & Progression")
+
+-- Auto Swing
+MainTab:CreateToggle({
+   Name = "Auto Swing",
+   CurrentValue = false,
+   Callback = function(Value)
+      _G.AutoSwing = Value
+      task.spawn(function()
+         while _G.AutoSwing do
+            EnsureWeaponEquipped()
+            local event = Player:FindFirstChild("saberEvent")
+            if event then
+               event:FireServer("swingBlade")
+            end
+            task.wait(0.1)
+         end
+      end)
+   end,
+})
+
+-- Auto Upgrade Swords
+MainTab:CreateToggle({
+   Name = "Auto Upgrade Swords",
+   CurrentValue = false,
+   Callback = function(Value)
+      _G.AutoSwords = Value
+      task.spawn(function()
+         while _G.AutoSwords do
+            local event = Player:FindFirstChild("saberEvent")
+            if event then
+               event:FireServer("buyAllItems", { whichPlanet = "Ground", whichItems = "Swords" })
+            end
+            task.wait(2)
+         end
+      end)
+   end,
+})
+
+-- Auto Upgrade Crystals / Elements
+MainTab:CreateToggle({
+   Name = "Auto Upgrade Crystals / Elements",
+   CurrentValue = false,
+   Callback = function(Value)
+      _G.AutoCrystals = Value
+      task.spawn(function()
+         while _G.AutoCrystals do
+            local event = Player:FindFirstChild("saberEvent")
+            if event then
+               event:FireServer("buyAllItems", { whichPlanet = "Ground", whichItems = "Crystals" })
+            end
+            task.wait(2)
+         end
+      end)
+   end,
+})
+
+MainTab:CreateSection("Utilities")
+
+-- Infinite Jumps
+MainTab:CreateToggle({
+   Name = "Infinite Jumps",
+   CurrentValue = false,
+   Callback = function(Value)
+      _G.InfJumps = Value
+      game:GetService("UserInputService").JumpRequest:Connect(function()
+         if _G.InfJumps and Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
+            Player.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+         end
+      end)
+   end,
+})
+
+-- Sell
+MainTab:CreateButton({
+   Name = "Sell",
+   Callback = function()
+      FireProximity(Vector3.new(-89.70, 113.22, 131.84))
+   end,
+})
+
+-- Shop
+MainTab:CreateButton({
+   Name = "Shop",
+   Callback = function()
+      FireProximity(Vector3.new(-1.86, 113.75, 94.90))
+   end,
+})
+
+--------------------------------------------------------------------------------
+-- FARM TAB
+--------------------------------------------------------------------------------
+local FarmTab = Window:CreateTab("Farm", "star")
+
+FarmTab:CreateSection("Skills & Powers")
+
+-- Auto Buy Skills
+FarmTab:CreateToggle({
+   Name = "Auto Buy Skills",
+   CurrentValue = false,
+   Callback = function(Value)
+      _G.AutoSkills = Value
+      task.spawn(function()
+         while _G.AutoSkills do
+            local event = Player:FindFirstChild("saberEvent")
+            if event then
+               event:FireServer("buyAllItems", { whichPlanet = "Ground", whichItems = "Skills" })
+            end
+            task.wait(2)
+         end
+      end)
+   end,
+})
+
+-- Auto Buy Powers
+FarmTab:CreateToggle({
+   Name = "Auto Buy Powers",
+   CurrentValue = false,
+   Callback = function(Value)
+      _G.AutoPowers = Value
+      task.spawn(function()
+         while _G.AutoPowers do
+            local event = Player:FindFirstChild("saberEvent")
+            if event then
+               event:FireServer("buyAllItems", { whichPlanet = "Ground", whichItems = "Powers" })
+            end
+            task.wait(2)
+         end
+      end)
+   end,
+})
+
+--------------------------------------------------------------------------------
+-- ISLANDS TAB
+--------------------------------------------------------------------------------
+local IslandsTab = Window:CreateTab("Islands", "map")
+
+IslandsTab:CreateSection("World Travel")
+
+-- Menu a tendina con i 5 nomi
+IslandsTab:CreateDropdown({
+   Name = "Islands list",
+   Options = {"Planet Zephyr", "Infernal Planet", "Planet Omega", "Elements Planet", "Planet of Chaos"},
+   CurrentOption = "",
+   MultipleOptions = false,
+   Callback = function(Option)
+       SelectedIsland = Option
+   end,
+})
+
+-- Tasto TP per l'isola selezionata
+IslandsTab:CreateButton({
+   Name = "TP",
+   Callback = function()
+       if SelectedIsland ~= "" then
+           for _, island in ipairs(IslandCoordinates) do
+               if island.Name == SelectedIsland then
+                   DirectTeleport(island.Pos)
+                   Rayfield:Notify({Title = "Best Hub", Content = "Teletrasportato a: " .. SelectedIsland, Duration = 2})
+                   break
+               end
+           end
+       else
+           Rayfield:Notify({Title = "Errore", Content = "Scegli prima un'isola dalla lista!", Duration = 3})
+       end
+   end,
+})
+
+-- Tasto Unlock all (fa il giro di tutte e 5 le nuove coordinate)
+IslandsTab:CreateButton({
+   Name = "Unlock all",
+   Callback = function()
+       task.spawn(function()
+           for _, island in ipairs(IslandCoordinates) do
+               Rayfield:Notify({Title = "Best Hub", Content = "Sbloccando " .. island.Name .. "...", Duration = 1.2})
+               DirectTeleport(island.Pos)
+               task.wait(1.5)
+           end
+           Rayfield:Notify({Title = "Best Hub", Content = "Tutti e 5 i pianeti sono stati sbloccati con successo!", Duration = 3})
+       end)
+   end,
+})
+
+--------------------------------------------------------------------------------
+-- SETTINGS TAB
+--------------------------------------------------------------------------------
+local SettingsTab = Window:CreateTab("Settings", "settings")
+
+SettingsTab:CreateSection("Server Options")
+
+SettingsTab:CreateButton({
+   Name = "Anti AFK",
+   Callback = function()
+      Player.Idled:Connect(function()
+         game:GetService("VirtualUser"):Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+         task.wait(1)
+         game:GetService("VirtualUser"):Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+      end)
+      Rayfield:Notify({Title = "Best Hub", Content = "Anti-AFK Attivato!", Duration = 3})
+   end,
+})
+
+SettingsTab:CreateButton({
+   Name = "Rejoin Server",
+   Callback = function()
+      game:GetService("TeleportService"):Teleport(game.PlaceId)
+   end,
+})
+
+SettingsTab:CreateButton({
+   Name = "Destroy UI",
+   Callback = function()
+      Rayfield:Destroy()
+   end,
+})
